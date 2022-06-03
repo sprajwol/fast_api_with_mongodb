@@ -1,29 +1,28 @@
 import json
 from pprint import pprint
 from bson import ObjectId, json_util 
-from fastapi import APIRouter, HTTPException, status, Depends
-from fastapi.security.oauth2 import OAuth2PasswordRequestForm
+from fastapi import APIRouter, HTTPException, Depends
+from pymongo.errors import WriteError
 
-from models.user import User, Token
+from models.user import User
 from utils import utils, oauth2
 
 from config.db import conn
-from schemas.user import serializeDict, serializeList
+from schemas.user import serializeDict, serializeList, waitingApprovalList, waitingApprovalDict
 
-user = APIRouter()
+user = APIRouter(
+    prefix="/users",
+    tags=["Users"]
+)
 
-from pymongo.errors import WriteError
 
 @user.get('/')
 async def find_all_users():
     # print(f"conn.pymongo.user.find() ::: {conn.pymongo.user.find()}")
-    # print(
+    # print(s
     #     f"usersEntity(conn.pymongo.user.find()) ::: {usersEntity(conn.pymongo.user.find())}")
-    return serializeList(conn.pymongo.user.find())
+    return serializeList(conn.pymongo.user.find({"is_approved":True}))
 
-@user.get('/{id}')
-async def find_one_user(id, current_user: int = Depends(oauth2.get_current_user)):
-    return serializeDict(conn.pymongo.user.find_one({"_id": ObjectId(id)}))
 
 
 
@@ -42,6 +41,21 @@ async def create_user(user: User):
     return serializeList(conn.pymongo.user.find({}))
 
 
+@user.get('/waiting_approvals')
+async def find_all_users_waiting_approval():
+    print(f"conn.pymongo")
+    # print(
+    #     f"usersEntity(conn.pymongo.user.find()) ::: {usersEntity(conn.pymongo.user.find())}")
+    return waitingApprovalList(conn.pymongo.user.find({"is_approved":False}))
+
+@user.post('/waiting_approvals')
+async def approve_users():
+    return "this is approved"
+
+@user.get('/{id}')
+async def find_one_user(id, current_user: int = Depends(oauth2.get_current_user)):
+    return serializeDict(conn.pymongo.user.find_one({"_id": ObjectId(id), "is_approved":True}))
+
 @user.put('/{id}')
 async def update_user(id, user: User, current_user: int = Depends(oauth2.get_current_user)):
     conn.pymongo.user.find_one_and_update({"_id": ObjectId(id)}, {
@@ -55,28 +69,3 @@ async def delete_user(id, current_user: int = Depends(oauth2.get_current_user)):
     
     return serializeDict(conn.pymongo.user.find_one_and_delete({"_id": ObjectId(id)}))
 
-
-@user.post('/login', response_model=Token)
-def login(user_credentials: OAuth2PasswordRequestForm = Depends()):
-    # print("user_credentials.username",user_credentials.username)
-    user = serializeDict(conn.pymongo.user.find_one({"email": user_credentials.username}))
-    # print(user)
-    # print(user['password'])
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid Credentials")
-
-    if not utils.verify(user_credentials.password,  user['password']):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=f"Invalid Credentials")
-
-    # Create a token
-    # return token
-    # print("user", user['_id'])
-    access_token = oauth2.create_access_token(data={"user_id": user['_id']})
-
-    return {
-        "access_token": access_token,
-        "token_type": "Bearer"
-    }

@@ -22,3 +22,16 @@ def serializeDict(a) -> json:
 
 def serializeList(entity) -> list:
     return [serializeDict(a) for a in entity]
+
+
+def waitingApprovalDict(item) -> dict:
+    return {
+        "id": str(item['_id']),
+        "name": item["name"],
+        "email": item["email"],
+        "role": item['role'],
+        "is_approved": item['is_approved']
+    }
+
+def waitingApprovalList(entity) -> list:
+    return [waitingApprovalDict(a) for a in entity]

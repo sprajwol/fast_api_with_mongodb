@@ -4,8 +4,6 @@ from pydantic import BaseModel, EmailStr
 from fastapi import Depends, HTTPException
 
 
-ALL_ROLES = ["admin", "staff", "customer"]
-
 class ROLES_M(Enum):
     ADMIN = 'admin'
     STAFF = 'staff'
@@ -16,10 +14,14 @@ class User(BaseModel):
     email: EmailStr
     password: str
     role: ROLES_M = ROLES_M.CUSTOMER
+    is_approved: bool = False
+    approved_by: str = None
 
     class Config:  
         use_enum_values = True
 
+class WaitingApproval(BaseModel):
+    user: str
 
 
 class UserLogin(BaseModel):
