@@ -25,6 +25,12 @@ async def find_all_users():
 
 
 
+@user.get('/find')
+async def findfind_all_users(token: str = Depends(oauth2.token_auth_scheme)):
+    print(f"token ::: {token}")
+    # print(s
+    #     f"usersEntity(conn.pymongo.user.find()) ::: {usersEntity(conn.pymongo.user.find())}")
+    return serializeList(conn.pymongo.user.find({"is_approved":True}))
 
 @user.post('/', status_code=201)
 async def create_user(user: User):
@@ -41,8 +47,8 @@ async def create_user(user: User):
     return serializeList(conn.pymongo.user.find({}))
 
 
-@user.get('/waiting_approvals')
-async def find_all_users_waiting_approval():
+@user.get('/waiting_approvals', dependencies=[Depends(oauth2.RoleChecker(['admin']))])
+async def find_all_users_waiting_approval(current_user: int = Depends(oauth2.get_current_user)):
     print(f"conn.pymongo")
     # print(
     #     f"usersEntity(conn.pymongo.user.find()) ::: {usersEntity(conn.pymongo.user.find())}")

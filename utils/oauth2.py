@@ -1,7 +1,7 @@
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from fastapi import Depends, status, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, HTTPBearer
 from typing import List
 from bson import ObjectId, json_util 
 
@@ -64,3 +64,6 @@ class RoleChecker:
         # print(user)
         if user['role'] not in self.allowed_roles:
             raise HTTPException(status_code=403, detail="Operation not permitted")
+
+
+token_auth_scheme = HTTPBearer()
